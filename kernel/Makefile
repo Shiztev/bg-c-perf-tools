@@ -11,7 +11,7 @@ LIBS = -ltracefs
 CFLAGS ?= -g -Wall #-Wextra
 
 funccount: funccount.c
-	gcc -o funccount funccount.c $(INCLUDES) $(FLAGS) $(CFLAGS)
+	gcc -o funccount funccount.c $(INCLUDES) $(LIBS) $(CFLAGS)
 
 clean:
 	rm funccount
