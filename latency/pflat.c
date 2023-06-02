@@ -10,6 +10,8 @@
  */
 
 #include <tracefs.h>
+#include <event-parse.h>
+#include <trace-seq.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
