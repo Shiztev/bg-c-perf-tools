@@ -7,6 +7,7 @@ INCLUDES = -I/usr/local/include/tracefs
 INCLUDES += -I/usr/local/include/traceevent
 
 LIBS = -ltracefs
+LIBS += -ltraceevent
 
 CFLAGS ?= -g -Wall #-Wextra
 
