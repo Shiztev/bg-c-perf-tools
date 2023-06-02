@@ -63,7 +63,7 @@ int main(int argc, char const *argv[])
   int seconds;
 
   // options
-  if (!(argc > 2)) {
+  if (!(argc == 2)) {
     fprintf(stderr, "usage: pflat SECONDS\n");
     return EXIT_FAILURE;
   }
