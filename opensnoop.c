@@ -57,9 +57,9 @@ bool ensure_events_exist()
 				// check if event exists
 				if (!strcmp(systems[s], K_SYSTEM) && !strcmp(events[e], K_EVENT)) {
 					getnameprobe_exists = true;
-				} else if (!strcmp(systems[s], EVENT_SYS), && !strcmp(events[e], OPEN)) {
+				} else if (!strcmp(systems[s], EVENT_SYS) && !strcmp(events[e], OPEN)) {
 					open_exists = true;
-				} else if (!strcmp(systems[s], EVENT_SYS), && !strcmp(events[e], OPENAT)) {
+				} else if (!strcmp(systems[s], EVENT_SYS) && !strcmp(events[e], OPENAT)) {
 					openat_exists = true;
 				}
 				e++;
