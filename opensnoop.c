@@ -89,18 +89,19 @@ int main(int argc, char const *argv[])
 	struct tracefs_instance *inst;
 	int events_exist;
 
-	events_exist = ensure_events_exist();
-	printf("%d\n", events_exist);
-	if (!events_exist) {
-		// ERROR
-	} 
-
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kprobe_alloc(K_SYSTEM, K_EVENT,
 				K_ADDR, K_FORMAT);
 	if (!kprobe_event) {
 		// ERROR
 	}
+
+	// ensure events exist
+	events_exist = ensure_events_exist();
+	printf("%d\n", events_exist);
+	if (!events_exist) {
+		// ERROR
+	} 
 
 	// create instance
 	inst = tracefs_instance_create(INST_NAME);
