@@ -9,32 +9,30 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include <tracefs.h>
 
 // see docs.kernel.org/trace/kprobetrace.html for probe point formatting
 // kprobe definitions
-#define KPROBE_SYS "kprobes"
 #define K_SYSTEM NULL
 #define K_EVENT "getnameprobe"
 #define K_ADDR "getname"
 #define K_FORMAT "+0(+0($retval)):string"
 
-// event definitions
+// Event definitions
 #define EVENT_SYS "syscalls"
 #define OPENAT "sys_exit_openat"
 #define OPEN "sys_exit_open"
 
-// Instance constants
+// Instance definitions
 #define INST_NAME "opensnoop"
 
 /**
  * Verify that all required events are avaiable for use.
  *
  * Returns:
- *	a boolean indicating success (0) or failure.
+ *	a boolean indicating success (true) or failure.
  */
-bool ensure_events_exist(void)
+bool ensure_events_exist()
 {
 	char **systems; 
 	char **events;
@@ -47,40 +45,33 @@ bool ensure_events_exist(void)
 
 	systems = tracefs_event_systems(NULL);
 	if (!systems) {
-		// ERROR
+		return EXIT_FAILURE;
 	}
 
-	s = -1;
-	while (systems[++s]) {
+	s = 0;
+	while (systems[s]) {
+		e = 0;
 		events = tracefs_system_events(NULL, systems[s]);
-		if (!events) {
-			continue;
-		}
-
-		e = -1;
-		if (!strcmp(systems[s], K_SYSTEM)) {
-			// check for K_EVENT
-			// TODO: refactor
-			while (events[++e]) {
-				if (!strcmp(events[e], K_EVENT)) {
+		if (events) {
+			while (events[e]) {
+				// check if event exists
+				if (!strcmp(systems[s], K_SYSTEM) && !strcmp(events[e], K_EVENT)) {
 					getnameprobe_exists = true;
-				}
-			}
-		} else if (!strcmp(systems[s], EVENT_SYS)) {
-			// check for OPEN or OPENAT
-			while (events[++e]) {
-				if (!strcmp(events[e], OPEN)) {
+				} else if (!strcmp(systems[s], EVENT_SYS), && !strcmp(events[e], OPEN)) {
 					open_exists = true;
-				} else if (!strcmp(events[e], OPENAT)) {
+				} else if (!strcmp(systems[s], EVENT_SYS), && !strcmp(events[e], OPENAT)) {
 					openat_exists = true;
 				}
+				e++;
 			}
 		}
 		tracefs_list_free(events);
+		s++;
 	}
-	tracefs_list_free(systems);
 
-	return !(getnameprobe_exists && open_exists && openat_exists);
+	// clean up
+	tracefs_list_free(systems);
+	return open_exists && openat_exists && getnameprobe_exists;
 }
 
 int main(int argc, char const *argv[])
@@ -96,9 +87,7 @@ int main(int argc, char const *argv[])
 		// ERROR
 	}
 
-	// ensure events exist
 	events_exist = ensure_events_exist();
-	printf("%d\n", events_exist);
 	if (!events_exist) {
 		// ERROR
 	} 
