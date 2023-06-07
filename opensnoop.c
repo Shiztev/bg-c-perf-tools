@@ -20,6 +20,7 @@
 #define K_EVENT "getnameprobe"
 #define K_ADDR "getname"
 #define K_FORMAT "+0(+0($retval)):string"
+#define K_MAX_PROBES 0
 
 // Event definitions
 #define EVENT_SYS "syscalls"
@@ -85,18 +86,21 @@ int main(int argc, char const *argv[])
 	int events_exist;
 
 	// create kprobe -> avaiable in instances
-	kprobe_event = tracefs_kprobe_alloc(K_SYSTEM, K_EVENT,
-				K_ADDR, K_FORMAT);
+	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
+				K_ADDR, K_FORMAT, K_MAX_PROBES);
 	if (!kprobe_event) {
 		// ERROR creating dynevent descriptor
+		fprintf(stderr, "error: unable to create %s kretprobe dynamic event description\n", K_ADDR);
+		return EXIT_FAILURE;
 	}
 
 	events_exist = tracefs_dynevent_create(kprobe_event);
 	if (events_exist) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
-		fprintf(stderr, "error: unable to create %s kprobe\n%s",
+		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\b",
 				K_ADDR, output);
+		tracefs_dynevent_free(kprobe_event);
 		return EXIT_FAILURE;
 	}
 
