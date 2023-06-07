@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <tracefs.h>
 
 // see docs.kernel.org/trace/kprobetrace.html for probe point formatting
@@ -31,13 +32,46 @@
 // Instance definitions
 #define INST_NAME "opensnoop"
 
+extern int errno;
+
+bool enable_event(void *inst, char *system, char *event)
+{
+	int check;
+	check = tracefs_event_enable(inst, system, event);
+	if (check) {
+		perror(NULL);
+		fprintf(stderr, "(errno %d) events/%s/%s does not exist\n", errno, system, event);
+	}
+	return check;
+}
+
+/**
+ * Ensures necessary events exist and are the only events enabled.
+ */
+bool enable_necessary_events(void *inst)
+{
+	int check, kprobe_e, open_e, openat_e;
+	// disable all events and attempt to enable necessary events
+	check = tracefs_event_disable(inst, NULL, NULL);
+	if (check) {
+		perror(NULL);
+		fprintf(stderr, "(errno %d) unable to disable all events\n", errno);
+		return EXIT_FAILURE;
+	}
+
+	kprobe_e = enable_event(inst, K_EVENT_SYS, K_EVENT);
+	open_e = enable_event(inst, EVENT_SYS, OPEN);
+	openat_e = enable_event(inst, EVENT_SYS, OPENAT);
+	return (kprobe_e || open_e || openat_e);
+}
+
 /**
  * Verify that all required events are avaiable for use.
  *
  * Returns:
  *	a boolean indicating success (true) or failure.
  */
-bool ensure_events_exist()
+bool ensure_events_exist(void *inst)
 {
 	char **systems; 
 	char **events;
@@ -86,11 +120,12 @@ bool ensure_events_exist()
 				OPENAT);
 	}
 	if (!getnameprobe_exists) {
-		fprintf(stderr, "events/%s/%s does not exist (should have been created just prior)",
+		fprintf(stderr, "events/%s/%s does not exist (program should have created it)",
 				K_EVENT_SYS, K_EVENT);
 	}
 
 	return !(open_exists && openat_exists && getnameprobe_exists);
+
 }
 
 /**
@@ -105,6 +140,7 @@ int cleanup_instance(void *inst)
 	if (events_check) {
 		fprintf(stderr, "error: failed to destroy %s tracefs instance", INST_NAME);
 	}
+	inst = NULL;
 	return events_check;
 }
 
@@ -120,7 +156,18 @@ int cleanup_kprobe(void *kprobe_event)
 	if (events_check) {
 		fprintf(stderr, "error: failed to destroy %s kprobe dynamic event", K_ADDR);
 	}
+	kprobe_event = NULL;
 	return events_check;
+}
+
+/**
+ * Clean up tracefs instance and kprobe event.
+ */
+int cleanup(void *inst, void *kprobe_event)
+{
+	int inst_failure = cleanup_instance(inst);
+	int kprobe_failure = cleanup_kprobe(kprobe_event);
+	return (inst_failure || kprobe_failure);
 }
 
 int main(int argc, char const *argv[])
@@ -140,6 +187,16 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
+
+	// create instance
+	inst = tracefs_instance_create(INST_NAME);
+	if (!inst) {
+		// ERROR
+		fprintf(stderr, "error: unable to instantiate %s tracsfs instance\n", INST_NAME);
+		cleanup_kprobe(kprobe_event);
+		return EXIT_FAILURE;
+	}
+
 	// events_check = 0 on success
 	events_check = tracefs_dynevent_create(kprobe_event);
 	if (events_check) {
@@ -147,20 +204,18 @@ int main(int argc, char const *argv[])
 		output = tracefs_error_last(NULL);
 		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\b",
 				K_ADDR, output);
-		cleanup_kprobe(kprobe_event);
+		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	}
 
-	events_check = ensure_events_exist();
+	//events_check = ensure_events_exist_enabled(inst);
+	events_check = enable_necessary_events(inst);
 	if (events_check) {
 		// ERROR
 		fprintf(stderr, "error: not all required events exist!");
-		cleanup_kprobe(kprobe_event);
+		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	} 
-
-	// create instance
-	inst = tracefs_instance_create(INST_NAME);
 
 	// enable events
 	// tracefs_event_enable to enable events
