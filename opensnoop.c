@@ -94,7 +94,7 @@ int main(int argc, char const *argv[])
 	events_exist = tracefs_dynevent_create(kprobe_event);
 	if (events_exist) {
 		// ERROR creating kprobe dynamic event
-		output = tracefs_error_last(NULL)
+		output = tracefs_error_last(NULL);
 		fprintf(stderr, "error: unable to create %s kprobe\n%s",
 				K_ADDR, output);
 		return EXIT_FAILURE;
