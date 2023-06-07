@@ -21,6 +21,7 @@
 #define K_ADDR "getname"
 #define K_FORMAT "+0(+0($retval)):string"
 #define K_MAX_PROBES 0
+#define FORCE_DESTROY_KPROBE false
 
 // Event definitions
 #define EVENT_SYS "syscalls"
@@ -75,7 +76,51 @@ bool ensure_events_exist()
 
 	// clean up
 	tracefs_list_free(systems);
+
+	if (!open_exists) {
+		fprintf(stderr, "events/%s/%s does not exist", EVENT_SYS,
+				OPEN);
+	}
+	if (!openat_exists) {
+		fprintf(stderr, "events/%s/%s does not exist", EVENT_SYS,
+				OPENAT);
+	}
+	if (!getnameprobe_exists) {
+		fprintf(stderr, "events/%s/%s does not exist (should have been created just prior)",
+				K_EVENT_SYS, K_EVENT);
+	}
+
 	return !(open_exists && openat_exists && getnameprobe_exists);
+}
+
+/**
+ * Destroy and free tracefs instance.
+ */
+int cleanup_instance(void *inst)
+{
+	int events_check;
+	events_check = tracefs_instance_destroy(inst);
+	tracefs_instance_free(inst);
+
+	if (events_check) {
+		fprintf(stderr, "error: failed to destroy %s tracefs instance", INST_NAME);
+	}
+	return events_check;
+}
+
+/**
+ * Destroy and free kprobe dynamic event.
+ */
+int cleanup_kprobe(void *kprobe_event)
+{
+	int events_check;
+	events_check = tracefs_dynevent_destroy(kprobe_event, FORCE_DESTROY_KPROBE);
+	tracefs_dynevent_free(kprobe_event);
+
+	if (events_check) {
+		fprintf(stderr, "error: failed to destroy %s kprobe dynamic event", K_ADDR);
+	}
+	return events_check;
 }
 
 int main(int argc, char const *argv[])
@@ -83,7 +128,8 @@ int main(int argc, char const *argv[])
 	struct tracefs_dynevent *kprobe_event;
 	struct tracefs_instance *inst;
 	char *output;
-	int events_dne;
+	int events_check;
+	int return_check;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
@@ -94,20 +140,23 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-	// events_dne = 0 on success
-	events_dne = tracefs_dynevent_create(kprobe_event);
-	if (events_dne) {
+	// events_check = 0 on success
+	events_check = tracefs_dynevent_create(kprobe_event);
+	if (events_check) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
 		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\b",
 				K_ADDR, output);
-		tracefs_dynevent_free(kprobe_event);
+		cleanup_kprobe(kprobe_event);
 		return EXIT_FAILURE;
 	}
 
-	events_dne = ensure_events_exist();
-	if (events_dne) {
+	events_check = ensure_events_exist();
+	if (events_check) {
 		// ERROR
+		fprintf(stderr, "error: not all required events exist!");
+		cleanup_kprobe(kprobe_event);
+		return EXIT_FAILURE;
 	} 
 
 	// create instance
@@ -119,18 +168,11 @@ int main(int argc, char const *argv[])
 
 	// read data
 
-	//struct tep_handle *tep = tep_alloc();
-	//if (!tep_handle) {
-		// ERROR
-	//}
-
-
 
 	// clean up
-	//tep_free(tep);
-	tracefs_instance_destroy(inst);
-	tracefs_dynevent_free(kprobe_event);
+	return_check = cleanup_instance(inst);
+	events_check = cleanup_kprobe(kprobe_event);
 
-	return EXIT_SUCCESS;
+	return (return_check || events_check);
 }
 
