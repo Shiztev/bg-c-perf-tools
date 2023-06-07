@@ -9,11 +9,13 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <tracefs.h>
 
 // see docs.kernel.org/trace/kprobetrace.html for probe point formatting
 // kprobe definitions
 #define K_SYSTEM NULL
+#define K_EVENT_SYS "kprobes"
 #define K_EVENT "getnameprobe"
 #define K_ADDR "getname"
 #define K_FORMAT "+0(+0($retval)):string"
@@ -55,7 +57,7 @@ bool ensure_events_exist()
 		if (events) {
 			while (events[e]) {
 				// check if event exists
-				if (!strcmp(systems[s], K_SYSTEM) && !strcmp(events[e], K_EVENT)) {
+				if (!strcmp(systems[s], K_EVENT_SYS) && !strcmp(events[e], K_EVENT)) {
 					getnameprobe_exists = true;
 				} else if (!strcmp(systems[s], EVENT_SYS) && !strcmp(events[e], OPEN)) {
 					open_exists = true;
