@@ -75,7 +75,7 @@ bool ensure_events_exist()
 
 	// clean up
 	tracefs_list_free(systems);
-	return open_exists && openat_exists && getnameprobe_exists;
+	return !(open_exists && openat_exists && getnameprobe_exists);
 }
 
 int main(int argc, char const *argv[])
@@ -83,7 +83,7 @@ int main(int argc, char const *argv[])
 	struct tracefs_dynevent *kprobe_event;
 	struct tracefs_instance *inst;
 	char *output;
-	int events_exist;
+	int events_dne;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
@@ -94,8 +94,9 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-	events_exist = tracefs_dynevent_create(kprobe_event);
-	if (events_exist) {
+	// events_dne = 0 on success
+	events_dne = tracefs_dynevent_create(kprobe_event);
+	if (events_dne) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
 		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\b",
@@ -104,8 +105,8 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-	events_exist = ensure_events_exist();
-	if (!events_exist) {
+	events_dne = ensure_events_exist();
+	if (events_dne) {
 		// ERROR
 	} 
 
