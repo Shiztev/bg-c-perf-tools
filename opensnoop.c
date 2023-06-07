@@ -9,6 +9,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <tracefs.h>
 
@@ -80,13 +81,23 @@ int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
 	struct tracefs_instance *inst;
+	char *output;
 	int events_exist;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kprobe_alloc(K_SYSTEM, K_EVENT,
 				K_ADDR, K_FORMAT);
 	if (!kprobe_event) {
-		// ERROR
+		// ERROR creating dynevent descriptor
+	}
+
+	events_exist = tracefs_dynevent_create(kprobe_event);
+	if (events_exist) {
+		// ERROR creating kprobe dynamic event
+		output = tracefs_error_last(NULL)
+		fprintf(stderr, "error: unable to create %s kprobe\n%s",
+				K_ADDR, output);
+		return EXIT_FAILURE;
 	}
 
 	events_exist = ensure_events_exist();
