@@ -34,6 +34,9 @@
 
 extern int errno;
 
+/**
+ * Enable indicated event under the provided instance.
+ */
 bool enable_event(void *inst, char *system, char *event)
 {
 	int check;
@@ -124,7 +127,6 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-
 	// create instance
 	inst = tracefs_instance_create(INST_NAME);
 	if (!inst) {
@@ -145,18 +147,15 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-	//events_check = ensure_events_exist_enabled(inst);
+	// ensure necessary events are the only events enabled
 	events_check = enable_necessary_events(inst);
 	if (events_check) {
 		// ERROR
-		fprintf(stderr, "error: not all required events exist!");
+		fprintf(stderr, "unable to enable only necessary events");
 		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	} 
 
-	// enable events
-	// tracefs_event_enable to enable events
-	
 
 	// read data
 
