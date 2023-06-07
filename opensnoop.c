@@ -66,69 +66,6 @@ bool enable_necessary_events(void *inst)
 }
 
 /**
- * Verify that all required events are avaiable for use.
- *
- * Returns:
- *	a boolean indicating success (true) or failure.
- */
-bool ensure_events_exist(void *inst)
-{
-	char **systems; 
-	char **events;
-	int s, e;
-	bool open_exists, openat_exists, getnameprobe_exists;
-
-	open_exists = false;
-	openat_exists = false;
-	getnameprobe_exists = false;
-
-	systems = tracefs_event_systems(NULL);
-	if (!systems) {
-		return EXIT_FAILURE;
-	}
-
-	s = 0;
-	while (systems[s]) {
-		e = 0;
-		events = tracefs_system_events(NULL, systems[s]);
-		if (events) {
-			while (events[e]) {
-				// check if event exists
-				if (!strcmp(systems[s], K_EVENT_SYS) && !strcmp(events[e], K_EVENT)) {
-					getnameprobe_exists = true;
-				} else if (!strcmp(systems[s], EVENT_SYS) && !strcmp(events[e], OPEN)) {
-					open_exists = true;
-				} else if (!strcmp(systems[s], EVENT_SYS) && !strcmp(events[e], OPENAT)) {
-					openat_exists = true;
-				}
-				e++;
-			}
-		}
-		tracefs_list_free(events);
-		s++;
-	}
-
-	// clean up
-	tracefs_list_free(systems);
-
-	if (!open_exists) {
-		fprintf(stderr, "events/%s/%s does not exist", EVENT_SYS,
-				OPEN);
-	}
-	if (!openat_exists) {
-		fprintf(stderr, "events/%s/%s does not exist", EVENT_SYS,
-				OPENAT);
-	}
-	if (!getnameprobe_exists) {
-		fprintf(stderr, "events/%s/%s does not exist (program should have created it)",
-				K_EVENT_SYS, K_EVENT);
-	}
-
-	return !(open_exists && openat_exists && getnameprobe_exists);
-
-}
-
-/**
  * Destroy and free tracefs instance.
  */
 int cleanup_instance(void *inst)
