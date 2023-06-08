@@ -34,6 +34,7 @@
 // Instance definitions
 #define INST_NAME "opensnoop"
 #define TRACE "trace"
+#define PIPE_FLAGS O_NONBLOCK
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
@@ -155,6 +156,15 @@ void stop(int sig)
 	tracefs_trace_pipe_stop(inst);
 }
 
+ssize_t read_trace_data(void *inst)
+{
+	ssize_t pipe_check;
+	signal(SIGINT, stop);
+	pipe_check = tracefs_trace_pipe_print(inst, PIPE_FLAGS);
+	signal(SIGINT, SIG_DFL);
+	return pipe_check;
+}
+
 int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
@@ -207,9 +217,7 @@ int main(int argc, char const *argv[])
 	}
 
 	// read data
-	signal(SIGINT, stop);
-	pipe_check = tracefs_trace_pipe_print(inst, O_NONBLOCK);
-	signal(SIGINT, SIG_DFL);
+	pipe_check = read_trace_data(inst);
 	if (pipe_check == -1) {
 		fprintf(stderr, "error: error during trace pipe printing\n");
 	}
