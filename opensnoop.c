@@ -165,9 +165,9 @@ int main(int argc, char const *argv[])
 		return EXIT_FAILURE;
 	}
 
-	// events_check = 0 on success
-	events_check = tracefs_dynevent_create(kprobe_event);
-	if (events_check) {
+	// check = 0 on success
+	check = tracefs_dynevent_create(kprobe_event);
+	if (check) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
 		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\n",
@@ -177,8 +177,8 @@ int main(int argc, char const *argv[])
 	}
 
 	// ensure necessary events are the only events enabled
-	events_check = enable_necessary_events(inst);
-	if (events_check) {
+	check = enable_necessary_events(inst);
+	if (check) {
 		// ERROR
 		fprintf(stderr, "error: unable to enable only necessary events\n");
 		cleanup(inst, kprobe_event);
