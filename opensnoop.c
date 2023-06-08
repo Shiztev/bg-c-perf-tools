@@ -213,8 +213,9 @@ int main(int argc, char const *argv[])
 	} 
 
 	// TODO: prompt user to start tracing, inform them ctrl+c ends tracing
-	scanf("To stop tracing, press CTRL+C\nHit enter when ready to start tracing: %s",
-			output);
+	printf("To stop tracing, press CTRL+C\nHit enter when ready to start tracing: ");
+	output = "\0";
+	scanf("%s", output);
 	printf("\n");
 
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
