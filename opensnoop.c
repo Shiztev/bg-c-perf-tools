@@ -31,6 +31,7 @@
 
 // Instance definitions
 #define INST_NAME "opensnoop"
+#define TRACE "trace"
 
 extern int errno;
 
@@ -70,6 +71,7 @@ bool enable_necessary_events(void *inst)
 
 /**
  * Destroy and free tracefs instance.
+ * Returns 0 on success.
  */
 int cleanup_instance(void *inst)
 {
@@ -78,7 +80,8 @@ int cleanup_instance(void *inst)
 	tracefs_instance_free(inst);
 
 	if (events_check) {
-		fprintf(stderr, "error: failed to destroy %s tracefs instance", INST_NAME);
+		fprintf(stderr, "error: failed to destroy %s tracefs instance\n",
+				INST_NAME);
 	}
 	inst = NULL;
 	return events_check;
@@ -86,15 +89,18 @@ int cleanup_instance(void *inst)
 
 /**
  * Destroy and free kprobe dynamic event.
+ * Returns 0 on success.
  */
 int cleanup_kprobe(void *kprobe_event)
 {
 	int events_check;
-	events_check = tracefs_dynevent_destroy(kprobe_event, FORCE_DESTROY_KPROBE);
+	events_check = tracefs_dynevent_destroy(kprobe_event,
+			FORCE_DESTROY_KPROBE);
 	tracefs_dynevent_free(kprobe_event);
 
 	if (events_check) {
-		fprintf(stderr, "error: failed to destroy %s kprobe dynamic event", K_ADDR);
+		fprintf(stderr,"error: failed to destroy %s kprobe dynamic event\n",
+				K_ADDR);
 	}
 	kprobe_event = NULL;
 	return events_check;
@@ -102,6 +108,7 @@ int cleanup_kprobe(void *kprobe_event)
 
 /**
  * Clean up tracefs instance and kprobe event.
+ * Returns 0 on success.
  */
 int cleanup(void *inst, void *kprobe_event)
 {
@@ -110,20 +117,41 @@ int cleanup(void *inst, void *kprobe_event)
 	return (inst_failure || kprobe_failure);
 }
 
+/**
+ * Clear the trace buffer and turn the trace on.
+ * Returns 0 on success.
+ */
+int turn_trace_on(void *inst)
+{
+	int check;
+
+	check = tracefs_trace_off(inst);
+	if (check) {
+		fprintf(stderr, "error: unable to clear the trace buffer\n");
+		return EXIT_FAILURE;
+	}
+
+	check = tracefs_trace_on(inst);
+	if (check) {
+		fprintf(stderr, "error: unable to enable tracing\n");
+	}
+	return check;
+}
+
 int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
 	struct tracefs_instance *inst;
 	char *output;
-	int events_check;
-	int return_check;
+	int check, filedesc;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
 				K_ADDR, K_FORMAT, K_MAX_PROBES);
 	if (!kprobe_event) {
 		// ERROR creating dynevent descriptor
-		fprintf(stderr, "error: unable to create %s kretprobe dynamic event description\n", K_ADDR);
+		fprintf(stderr, "error: unable to create %s kretprobe dynamic event description\n",
+				K_ADDR);
 		return EXIT_FAILURE;
 	}
 
@@ -131,7 +159,8 @@ int main(int argc, char const *argv[])
 	inst = tracefs_instance_create(INST_NAME);
 	if (!inst) {
 		// ERROR
-		fprintf(stderr, "error: unable to instantiate %s tracsfs instance\n", INST_NAME);
+		fprintf(stderr, "error: unable to instantiate %s tracsfs instance\n",
+				INST_NAME);
 		cleanup_kprobe(kprobe_event);
 		return EXIT_FAILURE;
 	}
@@ -141,7 +170,7 @@ int main(int argc, char const *argv[])
 	if (events_check) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
-		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\b",
+		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\n",
 				K_ADDR, output);
 		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
@@ -151,19 +180,26 @@ int main(int argc, char const *argv[])
 	events_check = enable_necessary_events(inst);
 	if (events_check) {
 		// ERROR
-		fprintf(stderr, "unable to enable only necessary events");
+		fprintf(stderr, "error: unable to enable only necessary events\n");
 		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	} 
 
-
 	// read data
-
+	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
+	check = turn_trace_on(inst);
+	if (check) {
+		return EXIT_FAILURE;
+	}
+	// ...
+	check = tracefs_trace_off(inst);
+	if (check) {
+		fprintf(stderr, "error: unable to disable tracing\n");
+		return EXIT_FAILURE;
+	}
 
 	// clean up
-	return_check = cleanup_instance(inst);
-	events_check = cleanup_kprobe(kprobe_event);
-
-	return (return_check || events_check);
+	check = cleanup(inst, kprobe_event);
+	return check;
 }
 
