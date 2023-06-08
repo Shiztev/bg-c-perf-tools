@@ -174,6 +174,7 @@ int main(int argc, char const *argv[])
 	char *output;
 	ssize_t pipe_check;
 	int check;
+	char input;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
@@ -212,10 +213,9 @@ int main(int argc, char const *argv[])
 				"error: unable to enable only necessary events");
 	} 
 
-	// TODO: prompt user to start tracing, inform them ctrl+c ends tracing
-	printf("To stop tracing, press CTRL+C\nHit enter when ready to start tracing: ");
-	output = "\0";
-	scanf("%s", output);
+	// prompt user to start tracing
+	printf("To stop tracing, press CTRL+C\nHit enter when you're ready to start tracing: ");
+	scanf("%c", &input);
 	printf("\n");
 
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
