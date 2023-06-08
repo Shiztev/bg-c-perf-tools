@@ -80,8 +80,7 @@ int cleanup_instance(void *inst)
 	tracefs_instance_free(inst);
 
 	if (events_check) {
-		fprintf(stderr, "error: failed to destroy %s tracefs instance\n",
-				INST_NAME);
+		fprintf(stderr, "error: failed to destroy " INST_NAME " tracefs instance\n");
 	}
 	inst = NULL;
 	return events_check;
@@ -99,8 +98,7 @@ int cleanup_kprobe(void *kprobe_event)
 	tracefs_dynevent_free(kprobe_event);
 
 	if (events_check) {
-		fprintf(stderr,"error: failed to destroy %s kprobe dynamic event\n",
-				K_ADDR);
+		fprintf(stderr,"error: failed to destroy " K_ADDR " kprobe dynamic event\n");
 	}
 	kprobe_event = NULL;
 	return events_check;
@@ -115,6 +113,17 @@ int cleanup(void *inst, void *kprobe_event)
 	int inst_failure = cleanup_instance(inst);
 	int kprobe_failure = cleanup_kprobe(kprobe_event);
 	return (inst_failure || kprobe_failure);
+}
+
+/**
+ * Clean up instance, kprobe event, and print an error message.
+ * Always returns EXIT_FAILURE.
+ */
+int clean_failure(void *inst, void *kprobe_event, char *output)
+{
+	fprintf(stderr, "%s\n", output);
+	cleanup(inst, kprobe_event);
+	return EXIT_FAILURE;
 }
 
 /**
@@ -143,15 +152,14 @@ int main(int argc, char const *argv[])
 	struct tracefs_dynevent *kprobe_event;
 	struct tracefs_instance *inst;
 	char *output;
-	int check, filedesc;
+	int check;
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
 				K_ADDR, K_FORMAT, K_MAX_PROBES);
 	if (!kprobe_event) {
 		// ERROR creating dynevent descriptor
-		fprintf(stderr, "error: unable to create %s kretprobe dynamic event description\n",
-				K_ADDR);
+		fprintf(stderr, "error: unable to create " K_ADDR " kretprobe dynamic event description\n");
 		return EXIT_FAILURE;
 	}
 
@@ -159,8 +167,7 @@ int main(int argc, char const *argv[])
 	inst = tracefs_instance_create(INST_NAME);
 	if (!inst) {
 		// ERROR
-		fprintf(stderr, "error: unable to instantiate %s tracsfs instance\n",
-				INST_NAME);
+		fprintf(stderr, "error: unable to instantiate " INST_NAME " tracsfs instance\n");
 		cleanup_kprobe(kprobe_event);
 		return EXIT_FAILURE;
 	}
@@ -170,32 +177,32 @@ int main(int argc, char const *argv[])
 	if (check) {
 		// ERROR creating kprobe dynamic event
 		output = tracefs_error_last(NULL);
-		fprintf(stderr, "error: unable to create %s kretprobe dynmaic event\n%s\n",
-				K_ADDR, output);
-		cleanup(inst, kprobe_event);
+		clean_failure(inst, kprobe_event, 
+				"error: unable to create " K_ADDR " kretprobe dynmaic event");
+		fprintf(stderr, "%s\n", output);
+		free(output);
 		return EXIT_FAILURE;
 	}
 
 	// ensure necessary events are the only events enabled
 	check = enable_necessary_events(inst);
 	if (check) {
-		// ERROR
-		fprintf(stderr, "error: unable to enable only necessary events\n");
-		cleanup(inst, kprobe_event);
-		return EXIT_FAILURE;
+		return clean_failure(inst, kprobe_event,
+				"error: unable to enable only necessary events");
 	} 
 
 	// read data
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
 	check = turn_trace_on(inst);
 	if (check) {
+		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	}
 	// ...
 	check = tracefs_trace_off(inst);
 	if (check) {
-		fprintf(stderr, "error: unable to disable tracing\n");
-		return EXIT_FAILURE;
+		return clean_failure(inst, kprobe_event,
+				"error: unable to disable tracing");
 	}
 
 	// clean up
