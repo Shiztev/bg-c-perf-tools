@@ -34,7 +34,7 @@
 // Instance definitions
 #define INST_NAME "opensnoop"
 #define TRACE "trace"
-#define PIPE_FLAGS O_NONBLOCK
+#define PIPE_FLAGS 0 //O_NONBLOCK
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
