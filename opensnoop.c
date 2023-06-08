@@ -162,6 +162,9 @@ ssize_t read_trace_data(void *inst)
 	signal(SIGINT, stop);
 	pipe_check = tracefs_trace_pipe_print(inst, PIPE_FLAGS);
 	signal(SIGINT, SIG_DFL);
+
+	// TODO: sscanf to parse each line?
+
 	return pipe_check;
 }
 
@@ -208,6 +211,11 @@ int main(int argc, char const *argv[])
 		return clean_failure(inst, kprobe_event,
 				"error: unable to enable only necessary events");
 	} 
+
+	// TODO: prompt user to start tracing, inform them ctrl+c ends tracing
+	scanf("To stop tracing, press CTRL+C\nHit enter when ready to start tracing: %s",
+			&output);
+	printf("\n");
 
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
 	check = turn_trace_on(inst);
