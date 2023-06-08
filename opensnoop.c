@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
+#include <fcntl.h>
 #include <tracefs.h>
 
 // see docs.kernel.org/trace/kprobetrace.html for probe point formatting
@@ -34,6 +36,7 @@
 #define TRACE "trace"
 
 extern int errno;
+struct tracefs_instance *inst = NULL;
 
 /**
  * Enable indicated event under the provided instance.
@@ -147,11 +150,16 @@ int turn_trace_on(void *inst)
 	return check;
 }
 
+void stop(int sig)
+{
+	tracefs_trace_pipe_stop(inst);
+}
+
 int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
-	struct tracefs_instance *inst;
 	char *output;
+	ssize_t pipe_check;
 	int check;
 
 	// create kprobe -> avaiable in instances
@@ -191,21 +199,27 @@ int main(int argc, char const *argv[])
 				"error: unable to enable only necessary events");
 	} 
 
-	// read data
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
 	check = turn_trace_on(inst);
 	if (check) {
 		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	}
-	// ...
+
+	// read data
+	signal(SIGINT, stop);
+	pipe_check = tracefs_trace_pipe_print(inst, O_NONBLOCK);
+	signal(SIGINT, SIG_DFL);
+	if (pipe_check == -1) {
+		fprintf(stderr, "error: error during trace pipe printing\n");
+	}
+
+	// clean up
 	check = tracefs_trace_off(inst);
 	if (check) {
 		return clean_failure(inst, kprobe_event,
 				"error: unable to disable tracing");
 	}
-
-	// clean up
 	check = cleanup(inst, kprobe_event);
 	return check;
 }
