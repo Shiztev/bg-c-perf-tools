@@ -242,10 +242,10 @@ void read_event_data(void *inst, void *kprobe_event)
 	}
 
 	// sig must run tracefs_iterate_stop(inst);
-	//signal(SIGINT, stop_iter);
-	//tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, sched_callback, &this_pid);
-        //tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
-	//signal(SIGINT, SIG_DFL);
+	signal(SIGINT, stop_iter);
+	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, NULL);
+        tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
+	signal(SIGINT, SIG_DFL);
 
 	// clean up
 	tep_free(tep);
