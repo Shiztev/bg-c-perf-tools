@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <tracefs.h>
+#include <event-parse.h>
+#include <trace-seq.h>
 
 // see docs.kernel.org/trace/kprobetrace.html for probe point formatting
 // kprobe definitions
