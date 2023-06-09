@@ -193,25 +193,29 @@ static void stop_iter(int s)
 static int callback(struct tep_event *event, struct tep_record *record,
 			int cpu, void *data)
 {
-	struct trace_seq *seq;
+	struct trace_seq seq;
 	struct tep_format_field *field;
 
-	trace_seq_init(seq);
+	if (!seq.buffer) {
+		trace_seq_init(&seq);
+	}
+
 	field = tep_find_any_field(event, K_FIELD);
 	if (!field) {
 		fprintf(stderr, "error: field " K_FIELD " does not exist for %s\n",
 				event->name);
 		return EXIT_FAILURE;
 	}
-	tep_print_field_content(seq, record->data, record->size, field);
+	tep_print_field_content(&seq, record->data, record->size, field);
 
-	if (trace_seq_do_printf(seq) < 0) {
+	if (trace_seq_do_printf(&seq) < 0) {
 		fprintf(stderr, "error: unable to print seq\n");
 		return EXIT_FAILURE;
 	}
 
 	// clean up
-	trace_seq_destroy(seq);
+	//trace_seq_destroy(seq);
+	trace_seq_reset(&seq);
 	return EXIT_SUCCESS;
 }
 
