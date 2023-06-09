@@ -6,15 +6,20 @@
 INCLUDES = -I/usr/local/include/tracefs
 INCLUDES += -I/usr/local/include/traceevent
 
-LIBS = -ltracefs
-LIBS += -ltraceevent
+LTFS = -ltracefs
+LTE = -ltraceevent
+LIBS = $(LTFS) $(LTE)
 
 CFLAGS ?= -g -Wall #-Wextra
 
 opensnoop: opensnoop.c
 	gcc -o opensnoop opensnoop.c $(INCLUDES) $(LIBS) $(CFLAGS)
 
+cleanup: cleanup.c
+	gcc -o cleanup cleanup.c $(INCLUDES) $(LTFS) $(CFLAGS)
+
 clean:
 	rm opensnoop
+	rm cleanup
 
 .PHONY: clean
