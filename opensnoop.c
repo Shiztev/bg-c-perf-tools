@@ -25,6 +25,7 @@
 #define K_FORMAT "+0(+0($retval)):string"
 #define K_MAX_PROBES 0
 #define FORCE_DESTROY_KPROBE false
+#define K_FIELD "arg1"
 
 // Event definitions
 #define EVENT_SYS "syscalls"
@@ -187,6 +188,40 @@ static void stop_iter(int s)
 	tracefs_iterate_stop(inst);
 }
 
+static int callback(struct tep_event *event, struct tep_record *record,
+			int cpu, void *data)
+{
+	struct trace_seq *seq;
+	struct tep_format_field *field;
+
+	trace_seq_init(seq);
+	field = tep_find_any_field(event, K_FIELD);
+	if (!field) {
+		fprintf(stderr, "error: field " K_FIELD " does not exist for %s\n",
+				event->name);
+		return EXIT_FAILURE;
+	}
+	tep_print_field_content(seq, record->data, record->size, field);
+
+	if (trace_seq_do_printf(seq) < 0) {
+		fprintf(stderr, "error: unable to print seq\n");
+		return EXIT_FAILURE;
+	}
+
+	// clean up
+	trace_seq_destroy(seq);
+	return EXIT_SUCCESS;
+}
+
+/**
+ * Callback function for iterating events which doesn't do anything.
+ */
+static int callback_blank(struct tep_event *event, struct tep_record *record,
+			int cpu, void *data)
+{
+	return EXIT_SUCCESS;
+}
+
 /**
  * Iterate over event data.
  *
@@ -204,10 +239,14 @@ void read_event_data(void *inst, void *kprobe_event)
 		return;
 	}
 
-	//signal(SIGINT, sig);  // sig must run tracefs_iterate_stop(inst);
-	//tracefs_follow_event(tep, inst, "sched", "sched_switch", sched_callback, &this_pid);
-        //tracefs_iterate_raw_events(tep, instance, NULL, 0, callback, &my_data);
+	// sig must run tracefs_iterate_stop(inst);
+	//signal(SIGINT, stop_iter);
+	//tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, sched_callback, &this_pid);
+        //tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
 	//signal(SIGINT, SIG_DFL);
+
+	// clean up
+	tep_free(tep);
 }
 
 int main(int argc, char const *argv[])
