@@ -151,12 +151,22 @@ int turn_trace_on(void *inst)
 	return check;
 }
 
+/**
+ * Halts trace pipe streaming to stdout.
+ * Created specifically for terminating trace pipe stream via SIGINT.
+ */
 void stop(int sig)
 {
 	tracefs_trace_pipe_stop(inst);
 }
 
-ssize_t read_trace_data(void *inst)
+/**
+ * Read data from trace pipe.
+ * 
+ * Prerequisite:
+ *	Trace must be cleaned and turned on.
+ */
+ssize_t read_trace_pipe_data(void *inst)
 {
 	ssize_t pipe_check;
 	signal(SIGINT, stop);
@@ -168,11 +178,42 @@ ssize_t read_trace_data(void *inst)
 	return pipe_check;
 }
 
+/**
+ * Halts iteration of raw events. 
+ * Created specifically for terminating raw event iteration via SIGINT.
+ */
+static void stop_iter(int s)
+{
+	tracefs_iterate_stop(inst);
+}
+
+/**
+ * Iterate over event data.
+ *
+ * Prerequisite:
+ *	Trace must be cleaned and turned on.
+ */
+void read_event_data(void *inst, void *kprobe_event)
+{
+	struct tep_handle *tep;
+	const char *systems[] = {K_EVENT_SYS, NULL};
+
+	tep = tracefs_local_events_system(NULL, systems);
+	if (!tep) {
+		fprintf(stderr, "error: unable to create tep handle for " K_EVENT_SYS " event system\n");
+		return;
+	}
+
+	//signal(SIGINT, sig);  // sig must run tracefs_iterate_stop(inst);
+	//tracefs_follow_event(tep, inst, "sched", "sched_switch", sched_callback, &this_pid);
+        //tracefs_iterate_raw_events(tep, instance, NULL, 0, callback, &my_data);
+	//signal(SIGINT, SIG_DFL);
+}
+
 int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
 	char *output;
-	ssize_t pipe_check;
 	int check;
 	char input;
 
@@ -226,10 +267,7 @@ int main(int argc, char const *argv[])
 	}
 
 	// read data
-	pipe_check = read_trace_data(inst);
-	if (pipe_check == -1) {
-		fprintf(stderr, "error: error during trace pipe printing\n");
-	}
+	read_event_data(inst, kprobe_event);
 
 	// clean up
 	check = tracefs_trace_off(inst);
