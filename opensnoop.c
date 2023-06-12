@@ -51,10 +51,12 @@ static bool iter_events = true;
 bool enable_event(void *inst, char *system, char *event)
 {
 	int check;
+
 	check = tracefs_event_enable(inst, system, event);
 	if (check) {
 		perror(NULL);
-		fprintf(stderr, "(errno %d) events/%s/%s does not exist\n", errno, system, event);
+		fprintf(stderr, "(errno %d) events/%s/%s does not exist\n",
+				errno, system, event);
 	}
 	return check;
 }
@@ -65,11 +67,13 @@ bool enable_event(void *inst, char *system, char *event)
 bool enable_necessary_events(void *inst)
 {
 	int check, kprobe_e, open_e, openat_e;
+
 	// disable all events and attempt to enable necessary events
 	check = tracefs_event_disable(inst, NULL, NULL);
 	if (check) {
 		perror(NULL);
-		fprintf(stderr, "(errno %d) unable to disable all events\n", errno);
+		fprintf(stderr, "(errno %d) unable to disable all events\n",
+				errno);
 		return EXIT_FAILURE;
 	}
 
@@ -86,12 +90,13 @@ bool enable_necessary_events(void *inst)
 int cleanup_instance(void *inst)
 {
 	int events_check;
+
 	events_check = tracefs_instance_destroy(inst);
 	tracefs_instance_free(inst);
-
 	if (events_check) {
 		fprintf(stderr, "error: failed to destroy " INST_NAME " tracefs instance\n");
 	}
+
 	inst = NULL;
 	return events_check;
 }
@@ -103,13 +108,14 @@ int cleanup_instance(void *inst)
 int cleanup_kprobe(void *kprobe_event)
 {
 	int events_check;
+
 	events_check = tracefs_dynevent_destroy(kprobe_event,
 			FORCE_DESTROY_KPROBE);
 	tracefs_dynevent_free(kprobe_event);
-
 	if (events_check) {
 		fprintf(stderr,"error: failed to destroy " K_ADDR " kprobe dynamic event\n");
 	}
+
 	kprobe_event = NULL;
 	return events_check;
 }
@@ -215,9 +221,8 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	err = tep_get_common_field_val(seq, event, K_PID_FIELD, record, &pid,
 			ERR_ON);
 	if (err) {
-		if (print_seq(seq)) {
-			return EXIT_FAILURE;
-		}
+		print_seq(seq);
+		return EXIT_FAILURE;
 	}
 	printf("%lld - %s\n", pid, filename);
 
@@ -263,7 +268,8 @@ void read_event_data(void *inst, void *kprobe_event)
 	signal(SIGINT, stop_iter);
 	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, &seq);
 	while (iter_events) {
-		tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
+		tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank,
+				NULL);
 	}
 	signal(SIGINT, SIG_DFL);
 
