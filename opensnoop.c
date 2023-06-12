@@ -27,7 +27,8 @@
 #define K_FORMAT "+0(+0($retval)):string"
 #define K_MAX_PROBES 0
 #define FORCE_DESTROY_KPROBE false
-#define K_FIELD "arg1"
+#define K_FILENAME_FIELD "arg1"
+#define K_PID_FIELD "common_pid"
 
 // Event definitions
 #define EVENT_SYS "syscalls"
@@ -37,7 +38,8 @@
 // Instance definitions
 #define INST_NAME "opensnoop"
 #define TRACE "trace"
-#define PIPE_FLAGS 0 //O_NONBLOCK
+#define PIPE_FLAGS 0
+#define ERR_ON 1
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
@@ -155,30 +157,15 @@ int turn_trace_on(void *inst)
 }
 
 /**
- * Halts trace pipe streaming to stdout.
- * Created specifically for terminating trace pipe stream via SIGINT.
+ * Print content stored in a trace_seq* instance.
+ * Returns 0 on success.
  */
-void stop(int sig)
-{
-	tracefs_trace_pipe_stop(inst);
-}
-
-/**
- * Read data from trace pipe.
- * 
- * Prerequisite:
- *	Trace must be cleaned and turned on.
- */
-ssize_t read_trace_pipe_data(void *inst)
-{
-	ssize_t pipe_check;
-	signal(SIGINT, stop);
-	pipe_check = tracefs_trace_pipe_print(inst, PIPE_FLAGS);
-	signal(SIGINT, SIG_DFL);
-
-	// TODO: sscanf to parse each line?
-
-	return pipe_check;
+int print_seq(void *seq) {
+	if (trace_seq_do_printf(seq) < 0) {
+		fprintf(stderr, "error: unable to print seq\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
 
 /**
@@ -190,30 +177,50 @@ static void stop_iter(int s)
 	tracefs_iterate_stop(inst);
 }
 
+/**
+ * Callback function for filename kprobe event.
+ * Prints the name of the file that was opened and the PID responsible for
+ * opening it. 
+ *
+ * Returns EXIT_SUCCESS on success and EXIT_FAILURE on errors.
+ */
 static int callback(struct tep_event *event, struct tep_record *record,
 			int cpu, void *data)
 {
 	struct tep_format_field *field;
 	struct trace_seq *seq = data;
 	char *filename;
-	int len;
+	unsigned long long pid;
+	int len, err;
 
-	field = tep_find_any_field(event, K_FIELD);
+	// ensure non-common filename field exists
+	field = tep_find_any_field(event, K_FILENAME_FIELD);
 	if (!field) {
-		fprintf(stderr, "error: field " K_FIELD " does not exist for %s\n",
+		fprintf(stderr, "error: field " K_FILENAME_FIELD " does not exist for %s\n",
 				event->name);
 		return EXIT_FAILURE;
 	}
 	
-	filename = tep_get_field_raw(seq, event, K_FIELD, record, &len, 1);
+	// fetch filename
+	filename = tep_get_field_raw(seq, event, K_FILENAME_FIELD, record,
+			&len, ERR_ON);
 	if (!filename) {
 		fprintf(stderr, "error: invalid filename received\n");
 		return EXIT_FAILURE;
 	}
-	printf("%s\n", filename);
+	
+	// fetch pid
+	err = tep_get_common_field_val(seq, event, K_PID_FIELD, record, &pid,
+			ERR_ON);
+	if (err) {
+		if (print_seq(seq)) {
+			return EXIT_FAILURE;
+		}
+	}
+	printf("%lld - %s\n", pid, filename);
 
-	if (trace_seq_do_printf(seq) < 0) {
-		fprintf(stderr, "error: unable to print seq\n");
+	// print any errors
+	if (print_seq(seq)) {
 		return EXIT_FAILURE;
 	}
 
