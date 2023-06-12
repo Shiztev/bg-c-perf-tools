@@ -34,6 +34,9 @@
 #define INST_NAME "opensnoop"
 #define ERR_ON 1
 #define EVENT_READ_WAIT 1
+#define PID_SPACING -7
+#define PID_HEADER "PID"
+#define F_HEADER "FILE"
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
@@ -216,7 +219,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 		print_seq(seq);
 		return EXIT_FAILURE;
 	}
-	printf("%lld - %s\n", pid, filename);
+	printf("%*lld%s\n", PID_SPACING, pid, filename);
 
 	// print any errors
 	if (print_seq(seq)) {
@@ -319,7 +322,7 @@ int main(int argc, char const *argv[])
 	// prompt user to start tracing
 	printf("To stop tracing, press CTRL+C\nHit enter when you're ready to start tracing: ");
 	scanf("%c", &input);
-	printf("\n");
+	printf("\n%*s%s\n", PID_SPACING, PID_HEADER, F_HEADER);
 
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
 	check = turn_trace_on(inst);
