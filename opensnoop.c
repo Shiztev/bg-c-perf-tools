@@ -193,14 +193,10 @@ static void stop_iter(int s)
 static int callback(struct tep_event *event, struct tep_record *record,
 			int cpu, void *data)
 {
-	struct trace_seq seq;
 	struct tep_format_field *field;
+	struct trace_seq *seq = data;
 	char *filename;
 	int len;
-
-	if (!seq.buffer) {
-		trace_seq_init(&seq);
-	}
 
 	field = tep_find_any_field(event, K_FIELD);
 	if (!field) {
@@ -208,22 +204,21 @@ static int callback(struct tep_event *event, struct tep_record *record,
 				event->name);
 		return EXIT_FAILURE;
 	}
-	//tep_print_field_content(&seq, record->data, record->size, field);
 	
-	filename = tep_get_field_raw(&seq, event, K_FIELD, record, &len, 0);
+	filename = tep_get_field_raw(seq, event, K_FIELD, record, &len, 0);
+	if (!filename) {
+		fprintf(stderr, "error: invalid filename received\n");
+		return EXIT_FAILURE;
+	}
 	printf("%s\n", filename);
 
-
-
-	/*
-	if (trace_seq_do_printf(&seq) < 0) {
+	if (trace_seq_do_printf(seq) < 0) {
 		fprintf(stderr, "error: unable to print seq\n");
 		return EXIT_FAILURE;
 	}
-	*/
 
 	// clean up
-	trace_seq_destroy(&seq);
+	trace_seq_reset(seq);
 	return EXIT_SUCCESS;
 }
 
@@ -246,20 +241,24 @@ void read_event_data(void *inst, void *kprobe_event)
 {
 	struct tep_handle *tep;
 	const char *systems[] = {K_EVENT_SYS, NULL};
+	struct trace_seq seq;
 
 	tep = tracefs_local_events_system(NULL, systems);
 	if (!tep) {
 		fprintf(stderr, "error: unable to create tep handle for " K_EVENT_SYS " event system\n");
 		return;
 	}
+	trace_seq_init(&seq);
 
 	// sig must run tracefs_iterate_stop(inst);
 	signal(SIGINT, stop_iter);
-	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, NULL);
+	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, &seq);
         tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
 	signal(SIGINT, SIG_DFL);
 
 	// clean up
+	trace_seq_reset(&seq);
+	trace_seq_destroy(&seq);
 	tep_free(tep);
 }
 
