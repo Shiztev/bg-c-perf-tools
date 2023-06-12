@@ -30,15 +30,8 @@
 #define K_FILENAME_FIELD "arg1"
 #define K_PID_FIELD "common_pid"
 
-// Event definitions
-#define EVENT_SYS "syscalls"
-#define OPENAT "sys_exit_openat"
-#define OPEN "sys_exit_open"
-
 // Instance definitions
 #define INST_NAME "opensnoop"
-#define TRACE "trace"
-#define PIPE_FLAGS 0
 #define ERR_ON 1
 #define EVENT_READ_WAIT 1
 
