@@ -40,6 +40,7 @@
 #define TRACE "trace"
 #define PIPE_FLAGS 0
 #define ERR_ON 1
+#define EVENT_READ_WAIT 0.5
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
@@ -78,8 +79,8 @@ bool enable_necessary_events(void *inst)
 	}
 
 	kprobe_e = enable_event(inst, K_EVENT_SYS, K_EVENT);
-	open_e = enable_event(inst, EVENT_SYS, OPEN);
-	openat_e = enable_event(inst, EVENT_SYS, OPENAT);
+	//open_e = enable_event(inst, EVENT_SYS, OPEN);
+	//openat_e = enable_event(inst, EVENT_SYS, OPENAT);
 	return (kprobe_e || open_e || openat_e);
 }
 
@@ -270,6 +271,7 @@ void read_event_data(void *inst, void *kprobe_event)
 	while (iter_events) {
 		tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank,
 				NULL);
+		sleep(EVENT_READ_WAIT);
 	}
 	signal(SIGINT, SIG_DFL);
 
