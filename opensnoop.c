@@ -205,7 +205,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 		return EXIT_FAILURE;
 	}
 	
-	filename = tep_get_field_raw(seq, event, K_FIELD, record, &len, 0);
+	filename = tep_get_field_raw(seq, event, K_FIELD, record, &len, 1);
 	if (!filename) {
 		fprintf(stderr, "error: invalid filename received\n");
 		return EXIT_FAILURE;
