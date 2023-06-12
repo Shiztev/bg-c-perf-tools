@@ -43,6 +43,7 @@
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
+static bool iter_events = true;
 
 /**
  * Enable indicated event under the provided instance.
@@ -174,6 +175,7 @@ int print_seq(void *seq) {
  */
 static void stop_iter(int s)
 {
+	iter_events = false;
 	tracefs_iterate_stop(inst);
 }
 
@@ -260,7 +262,9 @@ void read_event_data(void *inst, void *kprobe_event)
 	// sig must run tracefs_iterate_stop(inst);
 	signal(SIGINT, stop_iter);
 	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, &seq);
-        tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
+	while (iter_events) {
+		tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank, NULL);
+	}
 	signal(SIGINT, SIG_DFL);
 
 	// clean up
