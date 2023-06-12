@@ -67,7 +67,7 @@ bool enable_event(void *inst, char *system, char *event)
  */
 bool enable_necessary_events(void *inst)
 {
-	int check, kprobe_e, open_e, openat_e;
+	int check, kprobe_e;
 
 	// disable all events and attempt to enable necessary events
 	check = tracefs_event_disable(inst, NULL, NULL);
@@ -79,9 +79,7 @@ bool enable_necessary_events(void *inst)
 	}
 
 	kprobe_e = enable_event(inst, K_EVENT_SYS, K_EVENT);
-	//open_e = enable_event(inst, EVENT_SYS, OPEN);
-	//openat_e = enable_event(inst, EVENT_SYS, OPENAT);
-	return (kprobe_e || open_e || openat_e);
+	return kprobe_e;
 }
 
 /**
