@@ -195,6 +195,8 @@ static int callback(struct tep_event *event, struct tep_record *record,
 {
 	struct trace_seq seq;
 	struct tep_format_field *field;
+	char *filename;
+	int len;
 
 	if (!seq.buffer) {
 		trace_seq_init(&seq);
@@ -206,16 +208,22 @@ static int callback(struct tep_event *event, struct tep_record *record,
 				event->name);
 		return EXIT_FAILURE;
 	}
-	tep_print_field_content(&seq, record->data, record->size, field);
+	//tep_print_field_content(&seq, record->data, record->size, field);
+	
+	filename = tep_get_field_raw(&seq, event, K_FIELD, record, &len, 0);
+	printf("%s\n", filename);
 
+
+
+	/*
 	if (trace_seq_do_printf(&seq) < 0) {
 		fprintf(stderr, "error: unable to print seq\n");
 		return EXIT_FAILURE;
 	}
+	*/
 
 	// clean up
-	//trace_seq_destroy(seq);
-	trace_seq_reset(&seq);
+	trace_seq_destroy(&seq);
 	return EXIT_SUCCESS;
 }
 
