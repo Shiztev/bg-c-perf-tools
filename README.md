@@ -1,3 +1,3 @@
-## Flags to build
-To properly include tracefs.h: -ltracefs
-To properly include event-parse.h or trace-seq.h: -ltraceevent
+## Requirements
+- libtraceevent version 1.7.3 or later
+- libtracefs version 1.7 or later
