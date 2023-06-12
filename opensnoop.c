@@ -40,7 +40,7 @@
 #define TRACE "trace"
 #define PIPE_FLAGS 0
 #define ERR_ON 1
-#define EVENT_READ_WAIT 0.5
+#define EVENT_READ_WAIT 1
 
 extern int errno;
 struct tracefs_instance *inst = NULL;
