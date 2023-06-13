@@ -45,7 +45,7 @@ static bool iter_events = true;
 /**
  * Print error message and system error message.
  */
-static void print_err(char *loc, char *msg, int err)
+static void print_err(const char *loc, char *msg, int err)
 {
 	perror(loc);
 	fprintf(stderr, "(errno %d) %s\n", err, msg);
@@ -282,10 +282,20 @@ static void read_event_data(void *inst, void *kprobe_event)
 	tep_free(tep);
 }
 
+/**
+ * Print tracefs error message.
+ */
+static void print_tracefs_err()
+{
+	char *output;
+	output = tracefs_error_last(inst);
+	fprintf(stderr, "tracefs err: %s\n", output);
+	free(output);
+}
+
 int main(int argc, char const *argv[])
 {
 	struct tracefs_dynevent *kprobe_event;
-	char *output;
 	int check;
 	char input;
 
@@ -297,6 +307,7 @@ int main(int argc, char const *argv[])
 		print_err(K_EVENT " kretprobe Alloc", "unable to create "
 				K_ADDR " kretprobe dynamic event description",
 				errno);
+		print_tracefs_err();
 		return EXIT_FAILURE;
 	}
 
@@ -316,9 +327,7 @@ int main(int argc, char const *argv[])
 		// ERROR creating kprobe dynamic event
 		print_err(K_ADDR " dynevent Create", "unable to create " K_ADDR
 				" kretprobe dynmaic event", errno);
-		output = tracefs_error_last(NULL);
-		fprintf(stderr, "tracefs err: %s\n", output);
-		free(output);
+		print_tracefs_err();
 		return EXIT_FAILURE;
 	}
 
