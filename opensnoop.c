@@ -45,10 +45,12 @@ static bool iter_events = true;
 /**
  * Print error message and system error message.
  */
-static void print_err(const char *loc, char *msg, int err)
+static void print_err(const char *loc, char *msg)
 {
+	if (errno) {
 	perror(loc);
-	fprintf(stderr, "(errno %d) %s\n", err, msg);
+	}
+	fprintf(stderr, "(errno %d) %s\n", errno, msg);
 }
 
 /**
@@ -78,8 +80,8 @@ static bool enable_necessary_events(void *inst)
 	check = tracefs_event_disable(inst, NULL, NULL);
 	if (check) {
 		print_err("Initial Disable Events",
-				"unable to disable events to clean environment",
-				errno);
+				"unable to disable events to clean "
+				"environment");
 		return EXIT_FAILURE;
 	}
 	
@@ -99,7 +101,7 @@ static int cleanup_instance(void *inst)
 	tracefs_instance_free(inst);
 	if (events_check) {
 		print_err("Instance Clean Up", "unable to destroy " INST_NAME
-				" tracefs instance", errno);
+				" tracefs instance");
 	}
 
 	inst = NULL;
@@ -119,7 +121,7 @@ static int cleanup_kprobe(void *kprobe_event)
 	tracefs_dynevent_free(kprobe_event);
 	if (events_check) {
 		print_err(K_EVENT " kprobe Clean Up", "unable to destroy "
-				K_ADDR " kprobe dynamic event", errno);
+				K_ADDR " kprobe dynamic event");
 	}
 
 	kprobe_event = NULL;
@@ -149,14 +151,13 @@ static int turn_trace_on(void *inst)
 	if (check) {
 		print_err("Turn Tracing Off", 
 				"unable to clear the trace buffer before "
-				"running", errno);
+				"running");
 		return EXIT_FAILURE;
 	}
 
 	check = tracefs_trace_on(inst);
 	if (check) {
-		print_err("Turn Tracing Off", "unable to enable tracing",
-				errno);
+		print_err("Turn Tracing Off", "unable to enable tracing");
 	}
 	return check;
 }
@@ -168,7 +169,7 @@ static int turn_trace_on(void *inst)
 static int print_seq(void *seq) {
 	if (trace_seq_do_printf(seq) < 0) {
 		print_err("Print Sequence",
-				"unable to print sequence information", errno);
+				"unable to print sequence information");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
@@ -205,7 +206,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	if (!field) {
 		print_err("Validate kprobe",
 				"field " K_FILENAME_FIELD " does not exist for "
-				K_ADDR " kprobe event", errno);
+				K_ADDR " kprobe event");
 		return EXIT_FAILURE;
 	}
 	
@@ -213,7 +214,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	filename = tep_get_field_raw(seq, event, K_FILENAME_FIELD, record,
 			&len, ERR_ON);
 	if (!filename) {
-		print_err("Fetch Filename", "invalid filename received", errno);
+		print_err("Fetch Filename", "invalid filename received");
 		return EXIT_FAILURE;
 	}
 	
@@ -261,7 +262,7 @@ static void read_event_data(void *inst, void *kprobe_event)
 	if (!tep) {
 		print_err("Create " K_EVENT_SYS " System TEP", 
 				"unable to create tep handle for " 
-				K_EVENT_SYS " event system", errno);
+				K_EVENT_SYS " event system");
 		return;
 	}
 	trace_seq_init(&seq);
@@ -305,8 +306,7 @@ int main(int argc, char const *argv[])
 	if (!kprobe_event) {
 		// ERROR creating dynevent descriptor
 		print_err(K_EVENT " kretprobe Alloc", "unable to create "
-				K_ADDR " kretprobe dynamic event description",
-				errno);
+				K_ADDR " kretprobe dynamic event description");
 		print_tracefs_err();
 		return EXIT_FAILURE;
 	}
@@ -316,7 +316,7 @@ int main(int argc, char const *argv[])
 	if (!inst) {
 		// ERROR
 		print_err(INST_NAME " Instance Create", "unable to instantiate "
-				INST_NAME " tracsfs instance", errno);
+				INST_NAME " tracsfs instance");
 		cleanup_kprobe(kprobe_event);
 		return EXIT_FAILURE;
 	}
@@ -326,7 +326,7 @@ int main(int argc, char const *argv[])
 	if (check) {
 		// ERROR creating kprobe dynamic event
 		print_err(K_ADDR " dynevent Create", "unable to create " K_ADDR
-				" kretprobe dynmaic event", errno);
+				" kretprobe dynmaic event");
 		print_tracefs_err();
 		return EXIT_FAILURE;
 	}
@@ -357,8 +357,7 @@ int main(int argc, char const *argv[])
 	// clean up
 	check = tracefs_trace_off(inst);
 	if (check) {
-		print_err("Turning Trace Off", "unable to disable tracing",
-				errno);
+		print_err("Turning Trace Off", "unable to disable tracing");
 		cleanup(inst, kprobe_event);
 		return EXIT_FAILURE;
 	}
