@@ -1,7 +1,7 @@
 /**
  * @file opensnoop.c
  * @author Stevie Alvarez (steviea@google.com)
- * @brief Trace open() syscalls and the respective file being opened.
+ * @brief Trace files accessed by open() syscalls via kprobes.
  * @version 0.1
  * 
  * @copyright Copyright (c) 2023
