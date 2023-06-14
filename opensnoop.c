@@ -218,6 +218,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 			&len, ERR_ON);
 	if (!filename) {
 		print_err("Fetch Filename", ERR_PREFIX "invalid filename received");
+		print_seq(seq);
 		return EXIT_FAILURE;
 	}
 	
@@ -228,7 +229,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 		print_seq(seq);
 		return EXIT_FAILURE;
 	}
-	printf("%*lld%s\n", PID_SPACING, pid, filename);
+	printf("%*lld %s\n", PID_SPACING, pid, filename);
 
 	// print any errors
 	if (print_seq(seq))
