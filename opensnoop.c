@@ -33,6 +33,7 @@
 
 // Instance definitions
 #define INST_NAME "opensnoop"
+#define T_BUF "trace"
 #define ERR_ON 1
 #define EVENT_READ_WAIT 1
 #define PID_SPACING -7
@@ -152,9 +153,9 @@ static int turn_trace_on()
 {
 	int check;
 
-	check = tracefs_trace_off(inst);
+	check = tracefs_instance_file_clear(inst, T_BUF);
 	if (check) {
-		print_err("Turn Tracing Off",
+		print_err("Clean Trace",
 				ERR_PREFIX "unable to clear the trace buffer before running");
 		return EXIT_FAILURE;
 	}
@@ -172,12 +173,7 @@ static int turn_trace_on()
  * Returns 0 on success.
  */
 static int print_seq(struct trace_seq *seq) {
-	if (trace_seq_do_printf(seq) < 0) {
-		print_err("Print Sequence",
-				ERR_PREFIX "unable to print sequence information");
-		return EXIT_FAILURE;
-	}
-	return EXIT_SUCCESS;
+	return trace_seq_do_printf(seq) <= 0;
 }
 
 /**
