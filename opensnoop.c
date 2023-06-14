@@ -42,7 +42,9 @@
 #define ERR_PREFIX "error: "
 
 extern int errno;
-struct tracefs_instance *inst = NULL;
+
+static struct tracefs_instance *inst = NULL;
+static int my_pid;
 static bool iter_events = true;
 
 /**
@@ -201,8 +203,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	static struct tep_format_field *field;
 	struct trace_seq *seq = data;
 	char *filename;
-	unsigned long long pid;
-	int len, err;
+	int len, pid;
 
 	// ensure non-common filename field exists
 	if (!field) {
@@ -214,6 +215,14 @@ static int callback(struct tep_event *event, struct tep_record *record,
 			return EXIT_FAILURE;
 		}
 	}
+
+	// fetch pid
+	pid = tep_data_pid(event->tep, record);
+
+	// ensure not from this process
+	if (pid == my_pid)
+		return EXIT_SUCCESS;
+	
 	
 	// fetch filename
 	filename = tep_get_field_raw(seq, event, K_FILENAME_FIELD, record,
@@ -224,15 +233,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 		return EXIT_FAILURE;
 	}
 	
-	// fetch pid
-	err = tep_get_common_field_val(seq, event, K_PID_FIELD, record, &pid,
-			ERR_ON);
-	if (err) {
-		print_seq(seq);
-		return EXIT_FAILURE;
-	}
-	printf("%*lld %s\n", PID_SPACING, pid, filename);
-
+	printf("%*d %s\n", PID_SPACING, pid, filename);
 	return EXIT_SUCCESS;
 }
 
@@ -338,7 +339,9 @@ int main(int argc, char const *argv[])
 	}
 
 	// read data
+	my_pid = getpid();
 	read_event_data(kprobe_event);
+	printf("\n");
 
 	// clean up
 	tracefs_trace_off(inst);
