@@ -162,7 +162,7 @@ static int turn_trace_on()
 
 	check = tracefs_trace_on(inst);
 	if (check) {
-		print_err("Turn Tracing Off",
+		print_err("Turn Tracing On",
 				ERR_PREFIX "unable to enable tracing");
 	}
 	return check;
