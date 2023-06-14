@@ -24,7 +24,7 @@
 #define K_EVENT_SYS "kprobes"
 #define K_EVENT "getnameprobe"
 #define K_ADDR "getname"
-#define K_FORMAT "+0(+0($retval)):string"
+#define K_FMT_RETURN_STR "+0(+0($retval)):string"
 #define K_MAX_PROBES 0
 #define FORCE_DESTROY_KPROBE false
 #define K_FILENAME_FIELD "arg1"
@@ -302,7 +302,7 @@ int main(int argc, char const *argv[])
 
 	// create kprobe -> avaiable in instances
 	kprobe_event = tracefs_kretprobe_alloc(K_SYSTEM, K_EVENT,
-				K_ADDR, K_FORMAT, K_MAX_PROBES);
+				K_ADDR, K_FMT_RETURN_STR, K_MAX_PROBES);
 	if (!kprobe_event) {
 		// ERROR creating dynevent descriptor
 		print_err(K_EVENT " kretprobe Alloc", "unable to create "
