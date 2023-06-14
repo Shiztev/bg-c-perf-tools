@@ -141,7 +141,7 @@ static int cleanup(struct tracefs_dynevent **kprobe_event)
 {
 	int inst_failure = cleanup_instance();
 	int kprobe_failure = cleanup_kprobe(kprobe_event);
-	return (inst_failure || kprobe_failure);
+	return inst_failure || kprobe_failure;
 }
 
 /**
@@ -233,9 +233,8 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	printf("%*lld%s\n", PID_SPACING, pid, filename);
 
 	// print any errors
-	if (print_seq(seq)) {
+	if (print_seq(seq))
 		return EXIT_FAILURE;
-	}
 
 	// clean up
 	trace_seq_reset(seq);
