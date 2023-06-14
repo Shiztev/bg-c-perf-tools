@@ -231,8 +231,6 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	}
 	printf("%*lld %s\n", PID_SPACING, pid, filename);
 
-	// clean up
-	trace_seq_reset(seq);
 	return EXIT_SUCCESS;
 }
 
@@ -330,7 +328,7 @@ int main(int argc, char const *argv[])
 	scanf("%c", &input);
 	printf("\n%*s%s\n", PID_SPACING, PID_HEADER, F_HEADER);
 
-	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
+	// clean trace and turn it on
 	check = turn_trace_on();
 	if (check) {
 		cleanup(&kprobe_event);
