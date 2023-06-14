@@ -231,10 +231,6 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	}
 	printf("%*lld %s\n", PID_SPACING, pid, filename);
 
-	// print any errors
-	if (print_seq(seq))
-		return EXIT_FAILURE;
-
 	// clean up
 	trace_seq_reset(seq);
 	return EXIT_SUCCESS;
