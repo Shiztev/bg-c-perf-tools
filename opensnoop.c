@@ -196,19 +196,21 @@ static void stop_iter(int s)
 static int callback(struct tep_event *event, struct tep_record *record,
 			int cpu, void *data)
 {
-	struct tep_format_field *field;
+	static struct tep_format_field *field;
 	struct trace_seq *seq = data;
 	char *filename;
 	unsigned long long pid;
 	int len, err;
 
 	// ensure non-common filename field exists
-	field = tep_find_any_field(event, K_FILENAME_FIELD);
 	if (!field) {
-		print_err("Validate kprobe",
-				ERR_PREFIX "field " K_FILENAME_FIELD " does not exist for %s kprobe event",
-				event->name);
-		return EXIT_FAILURE;
+		field = tep_find_any_field(event, K_FILENAME_FIELD);
+		if (!field) {
+			print_err("Validate kprobe",
+					ERR_PREFIX "field " K_FILENAME_FIELD " does not exist for %s kprobe event",
+					event->name);
+			return EXIT_FAILURE;
+		}
 	}
 	
 	// fetch filename
