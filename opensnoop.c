@@ -63,7 +63,7 @@ void print_err(const char *label, const char*fmt, ...)
 /**
  * Enable event under the provided instance.
  */
-static bool enable_event(void *inst, char *system, char *event)
+static bool enable_event(char *system, char *event)
 {
 	int check;
 
@@ -79,7 +79,7 @@ static bool enable_event(void *inst, char *system, char *event)
 /**
  * Ensures necessary events exist and are the only events enabled.
  */
-static bool enable_necessary_events(void *inst)
+static bool enable_necessary_events()
 {
 	int check, kprobe_e;
 
@@ -91,7 +91,7 @@ static bool enable_necessary_events(void *inst)
 		return EXIT_FAILURE;
 	}
 	
-	kprobe_e = enable_event(inst, K_EVENT_SYS, K_EVENT);
+	kprobe_e = enable_event(K_EVENT_SYS, K_EVENT);
 	return kprobe_e;
 }
 
@@ -99,7 +99,7 @@ static bool enable_necessary_events(void *inst)
  * Destroy and free tracefs instance.
  * Returns 0 on success.
  */
-static int cleanup_instance(void *inst)
+static int cleanup_instance()
 {
 	int events_check;
 
@@ -118,7 +118,7 @@ static int cleanup_instance(void *inst)
  * Destroy and free kprobe dynamic event.
  * Returns 0 on success.
  */
-static int cleanup_kprobe(void *kprobe_event)
+static int cleanup_kprobe(struct tracefs_dynevent *kprobe_event)
 {
 	int events_check;
 
@@ -138,9 +138,9 @@ static int cleanup_kprobe(void *kprobe_event)
  * Clean up tracefs instance and kprobe event.
  * Returns 0 on success.
  */
-static int cleanup(void *inst, void *kprobe_event)
+static int cleanup(struct tracefs_dynevent *kprobe_event)
 {
-	int inst_failure = cleanup_instance(inst);
+	int inst_failure = cleanup_instance();
 	int kprobe_failure = cleanup_kprobe(kprobe_event);
 	return (inst_failure || kprobe_failure);
 }
@@ -149,7 +149,7 @@ static int cleanup(void *inst, void *kprobe_event)
  * Clear the trace buffer and turn the trace on.
  * Returns 0 on success.
  */
-static int turn_trace_on(void *inst)
+static int turn_trace_on()
 {
 	int check;
 
@@ -172,7 +172,7 @@ static int turn_trace_on(void *inst)
  * Print content stored in a trace_seq* instance.
  * Returns 0 on success.
  */
-static int print_seq(void *seq) {
+static int print_seq(struct trace_seq *seq) {
 	if (trace_seq_do_printf(seq) < 0) {
 		print_err("Print Sequence",
 				ERR_PREFIX "unable to print sequence information");
@@ -258,7 +258,7 @@ static int callback_blank(struct tep_event *event, struct tep_record *record,
  * Prerequisite:
  *	Trace must be cleaned and turned on.
  */
-static void read_event_data(void *inst, void *kprobe_event)
+static void read_event_data(struct tracefs_dynevent *kprobe_event)
 {
 	struct tep_handle *tep;
 	const char *systems[] = {K_EVENT_SYS, NULL};
@@ -337,7 +337,7 @@ int main(int argc, char const *argv[])
 	check = enable_necessary_events(inst);
 	if (check) {
 		fprintf(stderr, ERR_PREFIX "unable to enable only necessary events\n");
-		cleanup(inst, kprobe_event);
+		cleanup(kprobe_event);
 		return EXIT_FAILURE;
 	} 
 
@@ -347,23 +347,23 @@ int main(int argc, char const *argv[])
 	printf("\n%*s%s\n", PID_SPACING, PID_HEADER, F_HEADER);
 
 	// clean trace and turn it on (optimize with tracefs_trace_on_fd)
-	check = turn_trace_on(inst);
+	check = turn_trace_on();
 	if (check) {
-		cleanup(inst, kprobe_event);
+		cleanup(kprobe_event);
 		return EXIT_FAILURE;
 	}
 
 	// read data
-	read_event_data(inst, kprobe_event);
+	read_event_data(kprobe_event);
 
 	// clean up
 	check = tracefs_trace_off(inst);
 	if (check) {
 		print_err("Turning Trace Off", ERR_PREFIX "unable to disable tracing");
-		cleanup(inst, kprobe_event);
+		cleanup(kprobe_event);
 		return EXIT_FAILURE;
 	}
-	check = cleanup(inst, kprobe_event);
+	check = cleanup(kprobe_event);
 	return check;
 }
 
