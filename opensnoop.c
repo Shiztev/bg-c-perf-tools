@@ -237,15 +237,6 @@ static int callback(struct tep_event *event, struct tep_record *record,
 }
 
 /**
- * Callback function for iterating events which doesn't do anything.
- */
-static int callback_blank(struct tep_event *event, struct tep_record *record,
-			int cpu, void *data)
-{
-	return EXIT_SUCCESS;
-}
-
-/**
  * Iterate over event data.
  *
  * Prerequisite:
@@ -269,7 +260,7 @@ static void read_event_data(struct tracefs_dynevent *kprobe_event)
 	signal(SIGINT, stop_iter);
 	tracefs_follow_event(tep, inst, K_EVENT_SYS, K_EVENT, callback, &seq);
 	while (iter_events) {
-		tracefs_iterate_raw_events(tep, inst, NULL, 0, callback_blank,
+		tracefs_iterate_raw_events(tep, inst, NULL, 0, NULL,
 				NULL);
 		sleep(EVENT_READ_WAIT);
 	}
