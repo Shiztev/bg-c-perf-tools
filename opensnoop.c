@@ -47,8 +47,10 @@ static bool iter_events = true;
 
 /**
  * Print error message and system error message.
+ * If label is NULL, system error is not printed.
+ * Additional arguments are used with respect to fmt.
  */
-void print_err(const char *label, const char*fmt, ...)
+void print_err(const char *label, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -339,12 +341,7 @@ int main(int argc, char const *argv[])
 	read_event_data(kprobe_event);
 
 	// clean up
-	check = tracefs_trace_off(inst);
-	if (check) {
-		print_err("Turning Trace Off", ERR_PREFIX "unable to disable tracing");
-		cleanup(&kprobe_event);
-		return EXIT_FAILURE;
-	}
+	tracefs_trace_off(inst);
 	check = cleanup(&kprobe_event);
 	return check;
 }
