@@ -222,8 +222,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	// ensure not from this process
 	if (pid == my_pid)
 		return EXIT_SUCCESS;
-	
-	
+
 	// fetch filename
 	filename = tep_get_field_raw(seq, event, K_FILENAME_FIELD, record,
 			&len, ERR_ON);
@@ -324,7 +323,7 @@ int main(int argc, char const *argv[])
 		fprintf(stderr, ERR_PREFIX "unable to enable only necessary events\n");
 		cleanup(&kprobe_event);
 		return EXIT_FAILURE;
-	} 
+	}
 
 	// prompt user to start tracing
 	printf("To stop tracing, press CTRL+C\nHit enter when you're ready to start tracing: ");
@@ -348,4 +347,3 @@ int main(int argc, char const *argv[])
 	check = cleanup(&kprobe_event);
 	return check;
 }
-
