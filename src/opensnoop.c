@@ -36,6 +36,8 @@
 #define T_BUF "trace"
 #define ERR_ON 1
 #define EVENT_READ_WAIT 1
+#define COMM_SPACING -16
+#define COMM_HEADER "COMM"
 #define PID_SPACING -7
 #define PID_HEADER "PID"
 #define F_HEADER "FILE"
@@ -203,6 +205,7 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	static struct tep_format_field *field;
 	struct trace_seq *seq = data;
 	char *filename;
+	char *command;
 	int len, pid;
 
 	// ensure non-common filename field exists
@@ -223,6 +226,9 @@ static int callback(struct tep_event *event, struct tep_record *record,
 	if (pid == my_pid)
 		return EXIT_SUCCESS;
 
+	// fetch command name
+	command = tep_data_comm_from_pid(event->tep, pid);
+
 	// fetch filename
 	filename = tep_get_field_raw(seq, event, K_FILENAME_FIELD, record,
 			&len, ERR_ON);
@@ -231,8 +237,9 @@ static int callback(struct tep_event *event, struct tep_record *record,
 		print_seq(seq);
 		return EXIT_FAILURE;
 	}
-	
-	printf("%*d %s\n", PID_SPACING, pid, filename);
+
+	printf("%*s %*d %s\n", COMM_SPACING, command, PID_SPACING, pid,
+			filename);
 	return EXIT_SUCCESS;
 }
 
@@ -283,7 +290,7 @@ static void print_tracefs_err()
 	free(output);
 }
 
-int main(int argc, char const *argv[])
+int main(void)
 {
 	struct tracefs_dynevent *kprobe_event;
 	int check;
@@ -328,7 +335,8 @@ int main(int argc, char const *argv[])
 	// prompt user to start tracing
 	printf("To stop tracing, press CTRL+C\nHit enter when you're ready to start tracing: ");
 	scanf("%c", &input);
-	printf("\n%*s%s\n", PID_SPACING, PID_HEADER, F_HEADER);
+	printf("\n%*s %*s %s\n", COMM_SPACING, COMM_HEADER, PID_SPACING,
+			PID_HEADER, F_HEADER);
 
 	// clean trace and turn it on
 	check = turn_trace_on();
